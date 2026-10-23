@@ -1,7 +1,7 @@
-Write your reflection here.
+This assignment helped me connect the full payroll pipeline from raw CSV exports to a usable report.
+The biggest lesson was using vectorized string and date tools to clean the data before it ever reached the report, because the old spreadsheet format and the newer app format needed to be normalized carefully. 
+I also learned how grain changes the shape of the data: a long history table became a summary table, then a wide grid, and then a long missed-weeks table.
+The most difficult part was reshaping the data with pivot_table and melt, because small mistakes changed the meaning of the table and affected the logic for missing weeks.
+I also had trouble getting the app metrics to match the expected totals and formatting, especially when filtering by department and date range.
+Working through those issues helped me understand why each step has to preserve lineage and why the report should always be built from the cleaned history, not from ad hoc calculations.
 
-See reflection.md for what makes a good reflection — be specific, use the
-terminology from this assignment (grain, long vs. wide, vectorized .str methods,
-coerce, NaT, pd.to_datetime format, .dt, concat, ignore_index, group by, named
-aggregation, reset_index, pivot_table, fill_value, melt, lineage), and make it
-actionable.
