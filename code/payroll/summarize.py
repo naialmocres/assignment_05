@@ -24,81 +24,52 @@ from .history import add_clean_columns, add_date_parts, combine_exports
 
 
 def format_name(names: pd.Series) -> pd.Series:
-    """Turn HR's `"Last, First"` into `"First Last"`, for a whole Series.
-
-        "Moss, Pete"              ->  "Pete Moss"
-        "O'Furniture, Patty"      ->  "Patty O'Furniture"
-        "Docktur-Indahaus,Sara"   ->  "Sara Docktur-Indahaus"   # no space after ","
-        "  Job ,  Anita "         ->  "Anita Job"               # stray spaces
-
-    Steps: split every value on the comma with `.str.split(",")` — each value
-    becomes a list, and `.str[0]` / `.str[1]` pick an item out of every list.
-    Strip each part, then join them back together in the other order with a
-    space between. Same `.str` toolkit as `clean_employee_id`; no `apply`.
-    """
-    # TODO: your code here
-    pass
+    """Turn HR's "Last, First" into "First Last" for a whole Series."""
+    parts = names.str.split(",")
+    first = parts.str[1].str.strip()
+    last = parts.str[0].str.strip()
+    return first + " " + last
 
 
 def add_roster(history: pd.DataFrame, employees: pd.DataFrame) -> pd.DataFrame:
-    """Return the history with two roster columns added: display_name, department.
-
-    One row per history row, in the same order — every week anyone was paid
-    stays, and an `employee_id` that is not on the roster gets `NaN` in both new
-    columns rather than vanishing. Rostered people who were never paid do not
-    appear. That is the same one-sided merge as Assignment 04's Step 2
-    (`how="left"` with the history on the left, or `how="right"` with the frames
-    swapped).
-
-    Steps: work on a copy of the roster, add `display_name` to it with
-    `format_name`, keep only the three columns the history needs
-    (`employee_id`, `display_name`, `department`), and merge that onto the
-    history on `employee_id`. The history must have been through
-    `add_clean_columns` first — the raw `employeeid` does not match anything.
-    """
-    # TODO: your code here
-    pass
+    """Return the history with display_name and department added from the roster."""
+    roster = employees.copy()
+    roster["display_name"] = format_name(roster["name"])
+    roster = roster[["employee_id", "display_name", "department"]]
+    return pd.merge(history, roster, on="employee_id", how="left")
 
 
 def build_history(exports: list, employees: pd.DataFrame) -> pd.DataFrame:
-    """Raw exports and roster in; the finished quarter history out.
-
-    Chain the steps you have written, in order: `combine_exports`,
-    `add_clean_columns`, `add_date_parts`, `add_roster`. Call them; do not re-do
-    their work. The result has every raw column, every column the steps add, and
-    one row per row of every export.
-    """
-    # TODO: your code here
-    pass
+    """Raw exports and roster in; the finished quarter history out."""
+    history = combine_exports(exports)
+    history = add_clean_columns(history)
+    history = add_date_parts(history)
+    return add_roster(history, employees)
 
 
 def summarize_employees(history: pd.DataFrame) -> pd.DataFrame:
-    """One row per employee: how many weeks, how many hours, how much pay.
-
-    Group the history by `employee_id`, `display_name` and `department` (all
-    three, so all three come out as columns) and compute, for each group:
-
-    | column           | from            | how                                  |
-    | ---------------- | --------------- | ------------------------------------ |
-    | `weeks_paid`     | `week_ending`   | count                                |
-    | `total_hours`    | `hours_worked`  | sum                                  |
-    | `total_pay`      | `gross_pay`     | sum, rounded to cents                |
-    | `avg_hours`      | `hours_worked`  | mean, rounded to 2 places            |
-    | `overtime_weeks` | `hours_worked`  | how many of the weeks are over 40.0  |
-
-    Return exactly those eight columns, in the order `employee_id, display_name,
-    department, weeks_paid, total_hours, total_pay, avg_hours, overtime_weeks`,
-    one row per employee sorted by `employee_id`, with a plain 0, 1, 2, ... index
-    (the grouped columns end up in the index until you `reset_index()` —
-    lesson 3-5).
-
-    Use **named aggregation** — `.agg(new_name=("column", "how"))` — so the
-    columns come out with the right names and nothing needs renaming. `"how"`
-    can be a function, too: a lambda that receives one group's hours as a Series.
-
-    Rows with no `department` (an ID that was not on the roster) are left out
-    of a group-by by default. The app warns about them; this function does not
-    need to.
-    """
-    # TODO: your code here
-    pass
+    """One row per employee, summarizing weeks, hours, and pay."""
+    summary = (
+        history.groupby(["employee_id", "display_name", "department"])
+        .agg(
+            weeks_paid=("week_ending", "count"),
+            total_hours=("hours_worked", "sum"),
+            total_pay=("gross_pay", lambda s: round(s.sum(), 2)),
+            avg_hours=("hours_worked", lambda s: round(s.mean(), 2)),
+            overtime_weeks=("hours_worked", lambda s: (s > 40.0).sum()),
+        )
+        .reset_index()
+    )
+    summary = summary[
+        [
+            "employee_id",
+            "display_name",
+            "department",
+            "weeks_paid",
+            "total_hours",
+            "total_pay",
+            "avg_hours",
+            "overtime_weeks",
+        ]
+    ]
+    return summary.sort_values("employee_id").reset_index(drop=True)
