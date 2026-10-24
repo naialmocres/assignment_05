@@ -19,7 +19,7 @@ def clean_number(values: pd.Series) -> pd.Series:
 
 
 def parse_pay_date(values: pd.Series) -> pd.Series:
-    """Parse pay dates written either way; return a datetime Series. Unreadable -> NaT."""
+    """Parse either date format; unreadable values become NaT."""
     us = pd.to_datetime(values, format="%m/%d/%Y", errors="coerce")
     iso = pd.to_datetime(values, format="%Y-%m-%d", errors="coerce")
     return us.fillna(iso)

@@ -1,6 +1,5 @@
 """Streamlit dashboard for the quarterly payroll report."""
 
-import pandas as pd
 import streamlit as st
 
 from payroll import (
@@ -17,7 +16,9 @@ from payroll import (
 st.title("Salt City Coffee — Quarterly Payroll Report")
 
 roster = load_employees()
-uploads = st.file_uploader("Uploads", type=["csv"], accept_multiple_files=True, key="exports")
+uploads = st.file_uploader(
+    "Uploads", type=["csv"], accept_multiple_files=True, key="exports"
+)
 
 if uploads:
     history = build_history([load_export(upload) for upload in uploads], roster)
@@ -28,10 +29,15 @@ if uploads:
         .tolist()
     )
     if unmatched:
-        st.warning(f"Unmatched employee IDs were left out of the report: {', '.join(unmatched)}")
+        st.warning(
+            "Unmatched employee IDs were left out of the report: "
+            f"{', '.join(unmatched)}"
+        )
 
     clean_history = history[history["department"].notna()].copy()
-    departments = ["All"] + sorted(clean_history["department"].dropna().unique().tolist())
+    departments = ["All"] + sorted(
+        clean_history["department"].dropna().unique().tolist()
+    )
     department = st.selectbox("Department", departments, key="department")
 
     first_date = clean_history["pay_date"].min().date()
@@ -53,7 +59,8 @@ if uploads:
     if department != "All":
         selected = selected[selected["department"] == department]
     selected = selected[
-        (selected["pay_date"].dt.date >= start_date) & (selected["pay_date"].dt.date <= end_date)
+        (selected["pay_date"].dt.date >= start_date)
+        & (selected["pay_date"].dt.date <= end_date)
     ].copy()
 
     st.subheader("Quarterly payroll overview")
