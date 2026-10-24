@@ -56,13 +56,16 @@ def missed_weeks(grid: pd.DataFrame) -> pd.DataFrame:
 def pay_by_month(history: pd.DataFrame) -> pd.DataFrame:
     """Total gross pay by month (rows) and department (columns), to the cent."""
     monthly = (
-        history.groupby(["month", "department"], as_index=False)["gross_pay"]
-        .sum()
-        .pivot(index="month", columns="department", values="gross_pay")
-        .fillna(0.0)
+        history.pivot_table(
+            index="month",
+            columns="department",
+            values="gross_pay",
+            aggfunc="sum",
+            fill_value=0.0,
+        )
+        .rename_axis(index="month", columns=None)
         .sort_index(axis=0)
         .sort_index(axis=1)
         .reset_index()
     )
-    monthly.columns.name = None
     return monthly[["month"] + sorted(monthly.columns[1:])]
